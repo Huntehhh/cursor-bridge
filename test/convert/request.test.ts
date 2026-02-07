@@ -39,7 +39,8 @@ describe("convertRequest", () => {
     const result = convertRequest(basicFixture as OpenAIRequest, testConfig);
 
     expect(result.model).toBe("claude-sonnet-4-5-20250929");
-    expect(result.system).toBe("You are a helpful assistant.");
+    expect(result.system).toContain("You are Claude Code");
+    expect(result.system).toContain("You are a helpful assistant.");
     expect(result.messages).toHaveLength(1);
     expect(result.messages[0].role).toBe("user");
     expect(result.messages[0].content).toBe("Hello, how are you?");
@@ -52,7 +53,8 @@ describe("convertRequest", () => {
     const result = convertRequest(toolsFixture as OpenAIRequest, testConfig);
 
     expect(result.model).toBe("claude-sonnet-4-5-20250929");
-    expect(result.system).toBe("You can use tools to help the user.");
+    expect(result.system).toContain("You are Claude Code");
+    expect(result.system).toContain("You can use tools to help the user.");
 
     // Should have tools converted
     expect(result.tools).toHaveLength(1);
@@ -122,7 +124,8 @@ describe("convertRequest", () => {
       ],
     };
     const result = convertRequest(req, testConfig);
-    expect(result.system).toBe("You are helpful.\n\nBe concise.");
+    expect(result.system).toContain("You are Claude Code");
+    expect(result.system).toContain("You are helpful.\n\nBe concise.");
   });
 
   it("merges consecutive same-role messages", () => {

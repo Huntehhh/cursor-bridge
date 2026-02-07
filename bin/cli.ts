@@ -76,10 +76,10 @@ Options:
   const app = createApp(state);
   startServer(app, state.port);
 
-  // Auto-open browser for first-run gift experience
+  // Always open browser for first-run (auto-setup handles the rest)
   if (!state.config || shouldReset) {
     const url = `http://localhost:${state.port}`;
-    console.log(`\n  Opening gift in browser...`);
+    console.log(`\n  Opening setup in browser — auto-detecting Claude Code...`);
     setTimeout(() => openBrowser(url), 500);
   }
 }

@@ -13,6 +13,33 @@ import {
   convertNonStreamingResponse,
   createConverterState,
 } from "../convert/response.js";
+import { readClaudeCredentials } from "../auto-setup.js";
+import { createClient } from "../client.js";
+
+/**
+ * Attempt to refresh the OAuth token by re-reading credentials from disk.
+ * Claude Code refreshes tokens automatically — we just re-read the file.
+ * Returns true if a new client was installed into state.
+ */
+function tryRefreshClient(appState: AppState): boolean {
+  const creds = readClaudeCredentials();
+  if (!creds) return false;
+  if (creds.expiresAt && creds.expiresAt < Date.now()) return false;
+
+  try {
+    appState.client = createClient(creds.accessToken);
+    if (appState.config) {
+      appState.config.anthropicKey = creds.accessToken;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function isAuthError(err: unknown): boolean {
+  return !!(err && typeof err === "object" && "status" in err && (err as { status: number }).status === 401);
+}
 
 export function completionsRoute(appState: AppState) {
   const app = new Hono();
@@ -53,24 +80,43 @@ export function completionsRoute(appState: AppState) {
     const isStreaming = body.stream !== false;
 
     if (!isStreaming) {
-      // Non-streaming: simple request/response
+      // Non-streaming: request/response with 401 auto-refresh
       try {
         const params = {
           ...anthropicParams,
           stream: false,
         } as unknown as MessageCreateParamsNonStreaming;
-        const response = await client.messages.create(params);
+        const response = await appState.client!.messages.create(params);
         return c.json(convertNonStreamingResponse(response as Anthropic.Message));
       } catch (err) {
+        // On 401, try refreshing token and retry once
+        if (isAuthError(err) && tryRefreshClient(appState)) {
+          try {
+            const params = {
+              ...anthropicParams,
+              stream: false,
+            } as unknown as MessageCreateParamsNonStreaming;
+            const response = await appState.client!.messages.create(params);
+            return c.json(convertNonStreamingResponse(response as Anthropic.Message));
+          } catch (retryErr) {
+            return handleAnthropicError(c, retryErr);
+          }
+        }
         return handleAnthropicError(c, err);
       }
     }
 
-    // Streaming: convert Anthropic SSE → OpenAI SSE
+    // Streaming: convert Anthropic SSE → OpenAI SSE with abort handling
     return streamSSE(c, async (stream) => {
       try {
         const params = anthropicParams as unknown as MessageCreateParamsBase;
-        const anthropicStream = client.messages.stream(params);
+        const anthropicStream = appState.client!.messages.stream(params);
+
+        // Abort upstream when Cursor disconnects
+        stream.onAbort(() => {
+          anthropicStream.abort();
+        });
+
         const converterState = createConverterState();
 
         for await (const event of anthropicStream) {
@@ -85,6 +131,27 @@ export function completionsRoute(appState: AppState) {
         // Signal end of stream
         await stream.writeSSE({ data: "[DONE]" });
       } catch (err) {
+        // On 401, try refreshing token and retry the stream
+        if (isAuthError(err) && tryRefreshClient(appState)) {
+          try {
+            const params = anthropicParams as unknown as MessageCreateParamsBase;
+            const retryStream = appState.client!.messages.stream(params);
+            stream.onAbort(() => retryStream.abort());
+            const converterState = createConverterState();
+
+            for await (const event of retryStream) {
+              const chunk = convertStreamEvent(event, converterState);
+              if (chunk) {
+                await stream.writeSSE({ data: JSON.stringify(chunk) });
+              }
+            }
+            await stream.writeSSE({ data: "[DONE]" });
+            return;
+          } catch {
+            // Retry also failed — fall through to error
+          }
+        }
+
         // Try to send error as SSE before closing
         const errChunk = formatStreamError(err);
         await stream.writeSSE({ data: JSON.stringify(errChunk) });

@@ -286,6 +286,11 @@ function convertToolChoice(
   return undefined;
 }
 
+// OAuth tokens require the system prompt to start with this preamble.
+// Without it, the API returns "This credential is only authorized for use with Claude Code".
+const CLAUDE_CODE_PREAMBLE =
+  "You are Claude Code, Anthropic's official CLI for Claude.";
+
 export function convertRequest(
   req: OpenAIRequest,
   config: Pick<Config, "defaultModel" | "modelAliases">
@@ -299,7 +304,10 @@ export function convertRequest(
     stream: req.stream ?? true,
   };
 
-  if (system) result.system = system;
+  // Prepend Claude Code preamble for OAuth token compatibility
+  result.system = system
+    ? `${CLAUDE_CODE_PREAMBLE}\n\n${system}`
+    : CLAUDE_CODE_PREAMBLE;
   if (req.temperature !== undefined) result.temperature = req.temperature;
   if (req.top_p !== undefined) result.top_p = req.top_p;
 

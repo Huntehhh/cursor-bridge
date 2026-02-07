@@ -218,8 +218,13 @@ export function convertNonStreamingResponse(
     }
   }
 
-  const finishReason =
-    response.stop_reason === "tool_use" ? "tool_calls" : "stop";
+  const reasonMap: Record<string, string> = {
+    tool_use: "tool_calls",
+    max_tokens: "length",
+    end_turn: "stop",
+    stop_sequence: "stop",
+  };
+  const finishReason = reasonMap[response.stop_reason ?? ""] ?? "stop";
 
   return {
     id: response.id,

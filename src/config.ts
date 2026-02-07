@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync, chmodSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 
@@ -16,9 +16,9 @@ const CONFIG_PATH = join(CONFIG_DIR, "config.json");
 const DEFAULT_ALIASES: Record<string, string> = {
   "gpt-4": "claude-sonnet-4-5-20250929",
   "gpt-4o": "claude-sonnet-4-5-20250929",
-  "gpt-4o-mini": "claude-haiku-3-5-20241022",
+  "gpt-4o-mini": "claude-3-5-haiku-20241022",
   "gpt-4-turbo": "claude-opus-4-6",
-  "gpt-3.5-turbo": "claude-haiku-3-5-20241022",
+  "gpt-3.5-turbo": "claude-3-5-haiku-20241022",
 };
 
 export function configExists(): boolean {
@@ -33,6 +33,10 @@ export function loadConfig(): Config {
 export function saveConfig(config: Config): void {
   mkdirSync(CONFIG_DIR, { recursive: true });
   writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), "utf-8");
+  // Restrict permissions on non-Windows (owner read/write only)
+  if (process.platform !== "win32") {
+    try { chmodSync(CONFIG_PATH, 0o600); } catch { /* best-effort */ }
+  }
 }
 
 export function generateLocalToken(): string {

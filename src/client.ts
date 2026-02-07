@@ -19,8 +19,8 @@ export function createClient(key: string): Anthropic {
       authToken: key,
       defaultHeaders: {
         "anthropic-dangerous-direct-browser-access": "true",
-        "anthropic-beta": "claude-code-20250219,oauth-2025-04-20",
-        "user-agent": "claude-cli/2.1.2 (external, cli)",
+        "anthropic-beta": "claude-code-20250219,oauth-2025-04-20,interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14",
+        "user-agent": "claude-cli/2.1.34 (external, cli)",
         "x-app": "cli",
       },
     });

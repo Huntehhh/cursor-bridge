@@ -1,10 +1,12 @@
 import { Hono } from "hono";
 import { logger } from "hono/logger";
+import { streamSSE } from "hono/streaming";
 import type Anthropic from "@anthropic-ai/sdk";
 import type { Config } from "./config.js";
 import { modelsRoute } from "./routes/models.js";
 import { completionsRoute } from "./routes/completions.js";
 import { uiRoutes } from "./routes/ui.js";
+import { runAutoSetup } from "./auto-setup.js";
 
 export interface AppState {
   client: Anthropic | null;
@@ -30,6 +32,15 @@ export function createApp(state: AppState): Hono {
 
   // UI routes (gift page, setup API) — always available, no auth
   uiRoutes(state, app);
+
+  // Auto-setup SSE stream — runs the detection/config pipeline
+  app.get("/api/auto-setup/stream", (c) => {
+    return streamSSE(c, async (stream) => {
+      for await (const step of runAutoSetup(state)) {
+        await stream.writeSSE({ data: JSON.stringify(step) });
+      }
+    });
+  });
 
   // Dynamic auth on /v1/* — checks state.config at request time
   app.use("/v1/*", async (c, next) => {

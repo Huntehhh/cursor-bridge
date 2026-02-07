@@ -8,7 +8,7 @@ import { Hono } from "hono";
 const MODELS = [
   { id: "claude-opus-4-6", name: "Claude Opus 4.6" },
   { id: "claude-sonnet-4-5-20250929", name: "Claude Sonnet 4.5" },
-  { id: "claude-haiku-3-5-20241022", name: "Claude Haiku 3.5" },
+  { id: "claude-3-5-haiku-20241022", name: "Claude Haiku 3.5" },
 ];
 
 export const modelsRoute = new Hono();
