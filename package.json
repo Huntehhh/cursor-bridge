@@ -1,0 +1,30 @@
+{
+  "name": "cursor-bridge",
+  "version": "0.1.0",
+  "description": "Local proxy that lets Cursor IDE use a Claude subscription instead of per-token API billing",
+  "type": "module",
+  "bin": {
+    "cursor-bridge": "./bin/cli.ts"
+  },
+  "scripts": {
+    "dev": "tsx bin/cli.ts",
+    "build": "tsc",
+    "start": "node dist/bin/cli.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@hono/node-server": "^1.13.0",
+    "hono": "^4.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
