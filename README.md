@@ -42,17 +42,6 @@ After CursorBridge is running, open Cursor:
 
 The local token is just for Cursor ↔ CursorBridge auth. Your real credentials never leave your machine.
 
-## Model Mapping
-
-When Cursor sends requests for OpenAI models, CursorBridge maps them to Claude:
-
-| Cursor model | Routes to |
-|---|---|
-| `gpt-4`, `gpt-4o` | Claude Sonnet 4.5 |
-| `gpt-4-turbo` | Claude Opus 4.6 |
-| `gpt-3.5-turbo`, `gpt-4o-mini` | Claude Haiku 3.5 |
-| `claude-*` | Passed through directly |
-
 ## Daily Use
 
 ```bash
