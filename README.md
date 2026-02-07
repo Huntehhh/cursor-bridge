@@ -11,7 +11,7 @@ CursorBridge is a local proxy that translates Cursor's OpenAI-format requests in
 ## Quick Start
 
 ```bash
-git clone <repo-url> cursor-bridge
+git clone https://github.com/Huntehhh/cursor-bridge.git
 cd cursor-bridge
 ./setup.sh
 ```
